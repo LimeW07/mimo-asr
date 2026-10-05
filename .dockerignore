@@ -1,0 +1,11 @@
+.venv/
+.git/
+.github/
+tests/
+scripts/
+Makefile
+**/__pycache__/
+**/*.pyc
+.DS_Store
+*.log
+dist/
