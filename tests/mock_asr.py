@@ -12,9 +12,16 @@ import asyncio
 import json
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 LOG = "/tmp/mock_asr_requests.log"
 MAX_B64 = 10_000_000

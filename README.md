@@ -65,6 +65,30 @@ make run       # 启动
 
 ---
 
+## 静态网页版（GitHub Pages / Cloudflare Pages）
+
+`web/` 目录是**纯静态**版本：无 Python、无 ffmpeg、无常驻服务，可托管在任意静态平台。
+
+- **浏览器端分段**：WAV 按 PCM 块切片（`file.slice` 流式读取，800MB 也不会整块进内存）、
+  MP3 按帧边界切分，满足官方 base64 ≤10MB 限制；失败同样自动对半拆分重试
+- **直连模式（默认）**：MiMo 官方主机已开放 CORS（`access-control-allow-origin: *`），浏览器直接调用
+- **同源代理模式（可选）**：Cloudflare Pages Function `/api/proxy` 转发（主机白名单 `ALLOWED_HOSTS`，
+  默认仅 `xiaomimimo.com`），适用于不支持 CORS 的自定义网关
+- 限制：仅支持 **mp3 / wav**（其他格式请用本地版）；历史/导出/取消/流式与本地版一致
+
+```bash
+# GitHub Pages：push 后由 .github/workflows/pages.yml 自动发布
+# Cloudflare Pages：
+npx wrangler pages deploy web --project-name mimo-asr
+
+# 本地开发与测试
+cd web && npm test          # 16 项单测（分段器 + 代理函数）
+python3 -m http.server 8080 --directory web   # 静态预览
+```
+
+
+---
+
 ## 使用
 
 1. 打开页面，点右上角「API 设置」填写：
@@ -137,12 +161,15 @@ docker logs -f mimo-asr       # Docker
 
 ```
 ├── main.py               # FastAPI 服务（代理 / 分段 / 重试 / 拆分）
-├── static/               # 前端（index.html / style.css / app.js）
-├── tests/                # mock 上游 + 冒烟 + 浏览器 e2e
+├── static/               # 本地版前端（Python 服务托管）
+├── web/                  # 静态网页版（GitHub/Cloudflare Pages）
+│   ├── app.js / segmenter.js      # 浏览器端分段 + 双模式请求
+│   └── functions/api/proxy.js     # Cloudflare Pages Function 代理
+├── tests/                # mock 上游 + 冒烟 + 浏览器 e2e（本地版/Web 版）
 ├── scripts/run.sh|run.bat# 原生一键启动
 ├── Dockerfile            # 多平台镜像（含 ffmpeg，非 root）
 ├── docker-compose.yml
 ├── Makefile
-├── .github/workflows/    # 多架构镜像发布（GHCR）
+├── .github/workflows/    # 镜像发布(GHCR) / GH Pages / Cloudflare Pages
 └── dist/                 # 离线镜像包（构建产物，不入库）
 ```

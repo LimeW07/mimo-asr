@@ -1,0 +1,38 @@
+name: deploy-pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare site (静态部分，剔除测试与 CF 函数)
+        run: |
+          rm -rf /tmp/site
+          cp -r web /tmp/site
+          rm -rf /tmp/site/functions /tmp/site/test /tmp/site/package.json /tmp/site/node_modules
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

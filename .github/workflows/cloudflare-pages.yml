@@ -1,0 +1,30 @@
+name: cloudflare-pages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-secret:
+    runs-on: ubuntu-latest
+    outputs:
+      has: ${{ steps.check.outputs.has }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then echo "has=true" >> "$GITHUB_OUTPUT"; else echo "has=false" >> "$GITHUB_OUTPUT"; fi
+
+  deploy:
+    needs: check-secret
+    if: needs.check-secret.outputs.has == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web --project-name mimo-asr --branch main
